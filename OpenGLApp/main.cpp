@@ -1,6 +1,5 @@
 ﻿#include <stdio.h> //InputOutput - ex. erorrs to user
 #include <string.h>
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -10,49 +9,93 @@ const GLint WIDTH = 800, HEIGHT = 600;
 GLuint VAO, VBO, shader;
 
 //Vertex Shader
-static const char* vShader = "                                     \n\
-#version 330                                                       \n\
-                                                                   \n\
-layout (location = 0) in vec3 pos;                                 \n\
-                                                                   \n\
-void main()                                                        \n\
-{                                                                  \n\
-         gl_Position = vec4(0.4 * pos.x,0.4 * pos.y, pos.z, 1.0);  \n\
-}";    
+static const char* vShader = R"(
+#version 330
+
+layout (location = 0) in vec3 pos;
+layout (location = 1) in vec3 vertexColor;
+
+out vec3 fragColor;
+
+void main() {
+    gl_Position = vec4(0.4 * pos.x, 0.4 * pos.y, pos.z, 1.0);
+    fragColor = vertexColor;
+}
+)";
 
 //Fragment Shader
-static const char* fShader = "                                     \n\
-#version 330                                                       \n\
-                                                                   \n\
-out vec4 color;                                                   \n\
-                                                                   \n\
-void main()                                                        \n\
-{                                                                  \n\
-         color = vec4(1.0, 0.0, 0.0, 1.0);                        \n\
-}";
+static const char* fShader = R"(
+#version 330
+
+in vec3 fragColor;
+out vec4 color;
+
+void main() {
+    color = vec4(fragColor, 1.0);
+}
+)";
 
 
-void CreateTriangle() {
-
+void CreateHouse() {
+    // Vertices for the rectangle (base) and triangle (roof)
     GLfloat vertices[] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f
+        // Base (square)
+        -0.5f, -0.5f, 0.0f,  // Lower left
+         0.5f, -0.5f, 0.0f,  // Bottom right
+         0.5f,  0.0f, 0.0f,  // Top right
+        -0.5f,  0.0f, 0.0f,  // Top left
+
+        // Roof (triangle)
+        -0.5f,  0.0f, 0.0f,  // Left
+         0.5f,  0.0f, 0.0f,  // Right
+         0.0f,  0.5f, 0.0f   // Top
     };
 
+    // Colours for the vertices
+    GLfloat colors[] = {
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+    };
+
+    GLuint indices[] = {
+        // Base (square)
+        0, 1, 2,
+        2, 3, 0,
+        // Roof (triangle)
+        4, 5, 6
+    };
+
+    GLuint EBO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(colors), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(colors), colors);
 
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Vertices
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
+
+    // Colors
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)sizeof(vertices));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
+
 
 void AddShader(GLuint theProgram, const char* shaderCode, GLenum shaderType) {
     GLuint theShader = glCreateShader(shaderType);
@@ -77,7 +120,6 @@ void AddShader(GLuint theProgram, const char* shaderCode, GLenum shaderType) {
     }
 
     glAttachShader(theProgram, theShader);
-
 }
 
 void CompileShaders() {
@@ -158,7 +200,7 @@ int main()
     //Create Viewport
     glViewport(0, 0, bufferWidth, bufferHeight);
 
-    CreateTriangle();
+    CreateHouse();
     CompileShaders();
 
     //Loop until window close +/- Update/Tick
@@ -167,14 +209,14 @@ int main()
         glfwPollEvents();
 
         //Clear Window
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shader);
 
         glBindVertexArray(VAO);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
 
@@ -185,14 +227,3 @@ int main()
 
     return 0;
 }
-
-// Uruchomienie programu: Ctrl + F5 lub menu Debugowanie > Uruchom bez debugowania
-// Debugowanie programu: F5 lub menu Debugowanie > Rozpocznij debugowanie
-
-// Porady dotyczące rozpoczynania pracy:
-//   1. Użyj okna Eksploratora rozwiązań, aby dodać pliki i zarządzać nimi
-//   2. Użyj okna programu Team Explorer, aby nawiązać połączenie z kontrolą źródła
-//   3. Użyj okna Dane wyjściowe, aby sprawdzić dane wyjściowe kompilacji i inne komunikaty
-//   4. Użyj okna Lista błędów, aby zobaczyć błędy
-//   5. Wybierz pozycję Projekt > Dodaj nowy element, aby utworzyć nowe pliki kodu, lub wybierz pozycję Projekt > Dodaj istniejący element, aby dodać istniejące pliku kodu do projektu
-//   6. Aby w przyszłości ponownie otworzyć ten projekt, przejdź do pozycji Plik > Otwórz > Projekt i wybierz plik sln
