@@ -1,10 +1,12 @@
 ﻿#include <stdio.h> //InputOutput - ex. erorrs to user
+#include <string.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 //Window Dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
+
 
 int main()
 {
