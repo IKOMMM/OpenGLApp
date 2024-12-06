@@ -1,14 +1,19 @@
 ﻿#include <stdio.h> //InputOutput - ex. erorrs to user
 #include <string.h>
+
 #include <cmath>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <glm/mat4x4.hpp>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 //Window Dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 
-GLuint VAO, VBO, shader, uniformXMove;
+GLuint VAO, VBO, shader, uniformMove;
 
 //Object Movement valuses
 bool direction = true;
@@ -22,11 +27,11 @@ static const char* vShader = "                                             \n\
                                                                            \n\
 layout (location = 0) in vec3 pos;                                         \n\
                                                                            \n\
-uniform float xMove;                                                       \n\
+uniform mat4 model;                                                        \n\
                                                                            \n\
 void main()                                                                \n\
 {                                                                          \n\
-         gl_Position = vec4(0.4 * pos.x + xMove,0.4 * pos.y, pos.z, 1.0);  \n\
+         gl_Position = model * vec4(0.4 * pos.x,0.4 * pos.y, pos.z, 1.0);  \n\
 }";    
 
 //Fragment Shader
@@ -119,7 +124,7 @@ void CompileShaders() {
         return;
     }
 
-    uniformXMove = glGetUniformLocation(shader, "xMove");
+    uniformMove = glGetUniformLocation(shader, "model");
 }
 
 int main()
@@ -194,7 +199,10 @@ int main()
 
         glUseProgram(shader);
 
-        glUniform1f(uniformXMove, triOffset);
+        glm::mat4 model(1.0f);
+        model = glm::translate(model, glm::vec3(triOffset, triOffset, 0.0f));
+
+        glUniformMatrix4fv(uniformMove, 1, GL_FALSE, glm::value_ptr(model));
 
         glBindVertexArray(VAO);
 
@@ -209,14 +217,3 @@ int main()
 
     return 0;
 }
-
-// Uruchomienie programu: Ctrl + F5 lub menu Debugowanie > Uruchom bez debugowania
-// Debugowanie programu: F5 lub menu Debugowanie > Rozpocznij debugowanie
-
-// Porady dotyczące rozpoczynania pracy:
-//   1. Użyj okna Eksploratora rozwiązań, aby dodać pliki i zarządzać nimi
-//   2. Użyj okna programu Team Explorer, aby nawiązać połączenie z kontrolą źródła
-//   3. Użyj okna Dane wyjściowe, aby sprawdzić dane wyjściowe kompilacji i inne komunikaty
-//   4. Użyj okna Lista błędów, aby zobaczyć błędy
-//   5. Wybierz pozycję Projekt > Dodaj nowy element, aby utworzyć nowe pliki kodu, lub wybierz pozycję Projekt > Dodaj istniejący element, aby dodać istniejące pliku kodu do projektu
-//   6. Aby w przyszłości ponownie otworzyć ten projekt, przejdź do pozycji Plik > Otwórz > Projekt i wybierz plik sln
