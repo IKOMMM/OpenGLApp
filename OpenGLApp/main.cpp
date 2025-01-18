@@ -1,106 +1,88 @@
-﻿#include <stdio.h> //InputOutput - ex. erorrs to user
+﻿#include <stdio.h> // InputOutput - ex. errors to user
 #include <string.h>
 #include <cmath>
+#include <vector> // ZMIANA: Dodano bibliotekę vector
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-//Window Dimensions
+// Window Dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 
 GLuint VAO, VBO, EBO, shader, uniformXMove;
 
-//Object Movement valuses
+// Object Movement values
 bool direction = true;
 float triOffset = 0.0f;
 float triMaxoffset = 0.7f;
 float triIncrement = 0.001f;
 
-//Vertex Shader
-static const char* vShader = "                                             \n\
-#version 330                                                               \n\
-                                                                           \n\
-layout (location = 0) in vec3 pos;                                         \n\
-layout (location = 1) in vec3 color;                                       \n\
-                                                                           \n\
-out vec3 fragColor;                                                        \n\
-uniform float xMove;                                                       \n\
-                                                                           \n\
-void main()                                                                \n\
-{                                                                          \n\
-         gl_Position = vec4(0.4 * pos.x + xMove,0.4 * pos.y, pos.z, 1.0);  \n\
-         fragColor = color;                                                \n\
-}";
+// Vertex Shader
+static const char* vShader = R"(
+#version 330
 
-//Fragment Shader
-static const char* fShader = "                                     \n\
-#version 330                                                       \n\
-                                                                   \n\
-in vec3 fragColor;                                                 \n\
-out vec4 color;                                                    \n\
-                                                                   \n\
-void main()                                                        \n\
-{                                                                  \n\
-         color = vec4(fragColor, 1.0);                             \n\
-}";
+layout (location = 0) in vec3 pos;
+layout (location = 1) in vec3 color;
+
+out vec3 fragColor;
+uniform float xMove;
+
+void main() {
+    gl_Position = vec4(0.4 * pos.x + xMove, 0.4 * pos.y, pos.z, 1.0);
+    fragColor = color;
+}
+)";
+
+// Fragment Shader
+static const char* fShader = R"(
+#version 330
+
+in vec3 fragColor;
+out vec4 color;
+
+void main() {
+    color = vec4(fragColor, 1.0);
+}
+)";
 
 void CreateHouse() {
+    // ZMIANA: Usunięto powtarzające się wierzchołki
     GLfloat vertices[] = {
-        // Base (square)
-        -0.5f, -0.5f, 0.0f,  // Lower left
-         0.5f, -0.5f, 0.0f,  // Bottom right
-         0.5f,  0.0f, 0.0f,  // Top right
-        -0.5f,  0.0f, 0.0f,  // Top left
-
-        // Roof (triangle)
-        -0.5f,  0.0f, 0.0f,  // Left
-         0.5f,  0.0f, 0.0f,  // Right
-         0.0f,  0.5f, 0.0f   // Top
+        // Position (x, y, z)              Color (r, g, b)
+        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // Lower left
+         0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // Bottom right
+         0.5f,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  // Top right
+        -0.5f,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  // Top left
+         0.0f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f   // Roof top
     };
 
-    GLfloat colors[] = {
-        // Green base
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-
-        // Red roof
-        1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f
-    };
-
-    GLuint indices[] = {
-        // Base (square)
-        0, 1, 2,
-        2, 3, 0,
-        // Roof (triangle)
-        4, 5, 6
+    // ZMIANA: Indeksy definiujące trójkąty
+    std::vector<GLushort> indices = {
+        0, 1, 2,  // Base (first triangle)
+        2, 3, 0,  // Base (second triangle)
+        3, 2, 4   // Roof
     };
 
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
+    // ZMIANA: VBO - Bufor wierzchołków
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(colors), NULL, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(colors), colors);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    // ZMIANA: EBO - Bufor indeksów
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
 
-    // Vertices
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    // Define vertex attributes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Colors
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)sizeof(vertices));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    glBindVertexArray(0); // Unbind VAO
 }
 
 void AddShader(GLuint theProgram, const char* shaderCode, GLenum shaderType) {
@@ -194,7 +176,7 @@ int main() {
 
     glViewport(0, 0, bufferWidth, bufferHeight);
 
-    CreateHouse();  
+    CreateHouse();
     CompileShaders();
 
     while (!glfwWindowShouldClose(mainWindow)) {
@@ -211,14 +193,14 @@ int main() {
             direction = !direction;
         }
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shader);
         glUniform1f(uniformXMove, triOffset);
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);  
+        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_SHORT, 0); // ZMIANA: Użycie indeksów
         glBindVertexArray(0);
 
         glUseProgram(0);
