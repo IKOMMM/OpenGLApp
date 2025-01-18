@@ -27,6 +27,13 @@ float curSize = 0.4f;
 float maxSize = 0.8f;
 float minSize = 0.1f;
 
+// ZMIANA: Dodanie zmiennych do przechowywania parametrów macierzy projekcji
+float fov_;
+float aspect_;
+float near_;
+float far_;
+glm::mat4 projection_; // ZMIANA: Macierz projekcji
+
 // Vertex Shader code
 static const char* vShader = "                                                \n\
 #version 330                                                                  \n\
@@ -189,6 +196,15 @@ void CompileShaders()
 	uniformProjection = glGetUniformLocation(shader, "projection");
 }
 
+// ZMIANA: Dodanie funkcji callback do obsługi zmiany rozmiaru okna
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+	aspect_ = static_cast<float>(width) / static_cast<float>(height);
+	projection_ = glm::perspective(fov_, aspect_, near_, far_);
+	GLuint uniformProjection = glGetUniformLocation(shader, "projection");
+	glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection_));
+}
+
 int main()
 {
 	// Initialise GLFW
@@ -221,6 +237,13 @@ int main()
 	int bufferWidth, bufferHeight;
 	glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
 
+	// ZMIANA: Inicjalizacja parametrów projekcji
+	aspect_ = static_cast<float>(bufferWidth) / static_cast<float>(bufferHeight);
+	fov_ = glm::radians(45.0f);
+	near_ = 0.1f;
+	far_ = 100.0f;
+	projection_ = glm::perspective(fov_, aspect_, near_, far_);
+
 	// Set context for GLEW to use
 	glfwMakeContextCurrent(mainWindow);
 
@@ -240,10 +263,11 @@ int main()
 	// Setup Viewport size
 	glViewport(0, 0, bufferWidth, bufferHeight);
 
+	// ZMIANA: Rejestracja callbacku do obsługi zmiany rozmiaru
+	glfwSetFramebufferSizeCallback(mainWindow, framebuffer_size_callback);
+
 	CreateSquarePyramid();
 	CompileShaders();
-
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (GLfloat)bufferWidth / (GLfloat)bufferHeight, 0.1f, 100.0f);
 
 	// Loop until window closed
 	while (!glfwWindowShouldClose(mainWindow))
@@ -296,7 +320,7 @@ int main()
 		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection_));
 
 		glBindVertexArray(VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
