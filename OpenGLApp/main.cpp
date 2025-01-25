@@ -1,4 +1,4 @@
-﻿#include <stdio.h> // InputOutput - ex. errors to user
+﻿#include <stdio.h> 
 #include <string.h>
 #include <cmath>
 #include <vector> // ZMIANA: Dodano bibliotekę vector
@@ -47,7 +47,7 @@ void main() {
 void CreateHouse() {
     // ZMIANA: Usunięto powtarzające się wierzchołki
     GLfloat vertices[] = {
-        // Position (x, y, z)              Color (r, g, b)
+        // Position (x, y, z), Color (r, g, b)
         -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // Lower left
          0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // Bottom right
          0.5f,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  // Top right
